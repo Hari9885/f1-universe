@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>F1 UNIVERSE — 2025 Season Experience</title>
+  <meta name="description" content="An immersive cinematic journey through the 2025 Formula 1 season. Explore cars, drivers, races, and telemetry in a premium WebGL experience.">
+  <meta property="og:title" content="F1 UNIVERSE — 2025 Season">
+  <meta property="og:description" content="The definitive F1 digital experience. 24 races. 20 drivers. One championship.">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#060606">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Mono:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/main.css">
+
+  <!-- GSAP (free core + ScrollTrigger) -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+
+  <!-- Three.js Import Map -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+
+  <!-- ============================================ -->
+  <!-- CINEMATIC OVERLAYS                            -->
+  <!-- ============================================ -->
+  <div id="noise-overlay" aria-hidden="true"></div>
+  <div id="scanline-overlay" aria-hidden="true"></div>
+
+  <!-- ============================================ -->
+  <!-- LOADING SCREEN                                -->
+  <!-- ============================================ -->
+  <div id="loading-screen" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+    <div class="loader-content">
+      <svg id="rev-counter" viewBox="0 0 300 300" width="260" height="260">
+        <!-- Outer ring -->
+        <circle cx="150" cy="150" r="140" fill="none" stroke="#1A1A1A" stroke-width="1.5"/>
+        <circle cx="150" cy="150" r="138" fill="none" stroke="rgba(232,0,45,0.05)" stroke-width="0.5"/>
+        <!-- Tick marks - minor -->
+        <g id="minor-ticks" stroke="#3D3D3D" stroke-width="0.5"></g>
+        <!-- Tick marks - major -->
+        <g id="major-ticks" stroke="#F5F5F5" stroke-width="1.5"></g>
+        <!-- RPM numbers -->
+        <g id="rpm-numbers" fill="#9A9A9A" font-family="'DM Mono', monospace" font-size="11" text-anchor="middle"></g>
+        <!-- Redline zone arc -->
+        <path id="redline-arc" fill="none" stroke="#E8002D" stroke-width="6" opacity="0.25"/>
+        <!-- Progress arc -->
+        <path id="progress-arc" fill="none" stroke="#E8002D" stroke-width="2.5"/>
+        <!-- Needle -->
+        <line id="rev-needle" x1="150" y1="150" x2="150" y2="35" stroke="#E8002D" stroke-width="2" stroke-linecap="round" transform="rotate(-135, 150, 150)"/>
+        <!-- Center cap -->
+        <circle cx="150" cy="150" r="5" fill="#E8002D"/>
+        <circle cx="150" cy="150" r="2.5" fill="#060606"/>
+        <!-- Label -->
+        <text x="150" y="200" fill="#9A9A9A" font-family="'DM Mono', monospace" font-size="9" text-anchor="middle" letter-spacing="2">×1000 RPM</text>
+      </svg>
+      <p id="loading-text" class="loading-typewriter"></p>
+      <p id="loading-percent">0%</p>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- WEBGL CANVAS (fixed behind everything)        -->
+  <!-- ============================================ -->
+  <canvas id="webgl"></canvas>
+
+  <!-- ============================================ -->
+  <!-- CUSTOM CURSOR                                 -->
+  <!-- ============================================ -->
+  <div id="cursor-dot"></div>
+  <div id="cursor-ring"><span id="cursor-text"></span></div>
+
+  <!-- ============================================ -->
+  <!-- AUDIO TOGGLE                                  -->
+  <!-- ============================================ -->
+  <button id="audio-toggle" aria-label="Toggle audio" title="Toggle audio">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path id="audio-icon-on" d="M11 5L6 9H2v6h4l5 4V5z M15.54 8.46a5 5 0 010 7.07 M19.07 4.93a10 10 0 010 14.14"/>
+      <path id="audio-icon-off" d="M11 5L6 9H2v6h4l5 4V5z M23 9l-6 6 M17 9l6 6" style="display:none"/>
+    </svg>
+  </button>
+
+  <!-- ============================================ -->
+  <!-- SECTION NAV DOTS                              -->
+  <!-- ============================================ -->
+  <nav id="section-nav" aria-label="Section navigation">
+    <div class="nav-dot active" data-section="hero" title="Hero"></div>
+    <div class="nav-dot" data-section="car-carousel" title="2025 Grid"></div>
+    <div class="nav-dot" data-section="driver-profiles" title="Drivers"></div>
+    <div class="nav-dot" data-section="race-calendar" title="Calendar"></div>
+    <div class="nav-dot" data-section="telemetry" title="Telemetry"></div>
+    <div class="nav-dot" data-section="speed-wall" title="Speed Wall"></div>
+    <div class="nav-dot" data-section="constructor-standings" title="Constructors"></div>
+    <div class="nav-dot" data-section="pit-stop" title="Pit Stop"></div>
+    <div class="nav-dot" data-section="outro" title="Outro"></div>
+  </nav>
+
+  <!-- ============================================ -->
+  <!-- MAIN CONTENT                                  -->
+  <!-- ============================================ -->
+  <main id="main-content">
+
+    <!-- SECTION 1: HERO -->
+    <section id="hero" class="section" aria-label="Hero sequence">
+      <div class="hero-overlay">
+        <div class="hero-coordinates" id="hero-coords">
+          <span class="coord-label">BAHRAIN INTERNATIONAL CIRCUIT</span>
+          <span class="coord-value">26°01'N 50°30'E</span>
+        </div>
+        <div class="hero-telemetry-line" id="telemetry-line"></div>
+        <div class="hero-hud" id="hero-hud">
+          <div class="hud-speed">
+            <span id="speed-value">0</span>
+            <span class="hud-unit">KM/H</span>
+          </div>
+          <div class="hud-gear">
+            <span class="hud-label">GEAR</span>
+            <span id="gear-value">N</span>
+          </div>
+          <div class="hud-throttle">
+            <span class="hud-label">THROTTLE</span>
+            <div class="hud-bar"><div id="throttle-bar" class="hud-bar-fill"></div></div>
+          </div>
+          <div class="hud-brake">
+            <span class="hud-label">BRAKE</span>
+            <div class="hud-bar"><div id="brake-bar" class="hud-bar-fill brake"></div></div>
+          </div>
+          <div class="hud-drs" id="drs-indicator">
+            <span>DRS</span>
+          </div>
+        </div>
+        <div class="hero-scroll-hint" id="scroll-hint">
+          <span>SCROLL TO ENGAGE THROTTLE</span>
+          <div class="scroll-arrow"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: CAR CAROUSEL -->
+    <section id="car-carousel" class="section" aria-label="2025 Car Grid">
+      <div class="section-header">
+        <span class="section-id">02</span>
+        <h2 class="section-title headline">THE 2025 GRID</h2>
+        <p class="section-subtitle">10 TEAMS · 20 DRIVERS · THE FASTEST MACHINES ON EARTH</p>
+      </div>
+      <div class="carousel-wrapper">
+        <div class="carousel-track" id="carousel-track">
+          <!-- Generated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: DRIVER PROFILES -->
+    <section id="driver-profiles" class="section" aria-label="Driver profiles">
+      <div class="section-header">
+        <span class="section-id">03</span>
+        <h2 class="section-title headline">DRIVERS</h2>
+        <p class="section-subtitle">THE GLADIATORS OF SPEED</p>
+      </div>
+      <div class="drivers-grid" id="drivers-grid">
+        <!-- Generated by JS -->
+      </div>
+    </section>
+
+    <!-- SECTION 4: RACE CALENDAR -->
+    <section id="race-calendar" class="section" aria-label="Race calendar">
+      <div class="section-header">
+        <span class="section-id">04</span>
+        <h2 class="section-title headline">RACE CALENDAR</h2>
+        <p class="section-subtitle">24 GRANDS PRIX ACROSS 5 CONTINENTS</p>
+      </div>
+      <div class="calendar-layout">
+        <div class="globe-viewport" id="globe-viewport"></div>
+        <div class="race-list" id="race-list">
+          <!-- Generated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: TELEMETRY -->
+    <section id="telemetry" class="section" aria-label="Telemetry dashboard">
+      <div class="section-header">
+        <span class="section-id">05</span>
+        <h2 class="section-title headline">TELEMETRY</h2>
+        <p class="section-subtitle">ENGINEERING PRECISION · EVERY DATA POINT</p>
+      </div>
+      <div class="telemetry-dashboard" id="telemetry-dashboard">
+        <!-- Generated by JS -->
+      </div>
+    </section>
+
+    <!-- SECTION 6: SPEED WALL -->
+    <section id="speed-wall" class="section" aria-label="Speed wall data art">
+      <div class="section-header">
+        <span class="section-id">06</span>
+        <h2 class="section-title headline">SPEED WALL</h2>
+        <p class="section-subtitle">EVERY CIRCUIT HAS A FINGERPRINT</p>
+      </div>
+      <div class="speed-wall-grid" id="speed-wall-grid">
+        <!-- Generated by JS -->
+      </div>
+    </section>
+
+    <!-- SECTION 7: CONSTRUCTOR STANDINGS -->
+    <section id="constructor-standings" class="section" aria-label="Constructor championship">
+      <div class="section-header">
+        <span class="section-id">07</span>
+        <h2 class="section-title headline">CONSTRUCTORS</h2>
+        <p class="section-subtitle">THE BATTLE FOR ENGINEERING SUPREMACY</p>
+      </div>
+      <div class="standings-container" id="standings-container">
+        <!-- Generated by JS -->
+      </div>
+    </section>
+
+    <!-- SECTION 8: PIT STOP GAME -->
+    <section id="pit-stop" class="section" aria-label="Pit stop challenge">
+      <div class="section-header">
+        <span class="section-id">08</span>
+        <h2 class="section-title headline">PIT STOP CHALLENGE</h2>
+        <p class="section-subtitle">WORLD RECORD: 1.80s — RED BULL, 2023</p>
+      </div>
+      <div class="pitstop-game" id="pitstop-game">
+        <div class="pitstop-timer">
+          <span id="pitstop-time">0.00</span>
+          <span class="timer-unit">SEC</span>
+        </div>
+        <div class="pitstop-car-view">
+          <svg id="pitstop-car-svg" viewBox="0 0 400 600" class="pitstop-car">
+            <!-- Top-down F1 car silhouette -->
+            <g id="car-body-group">
+              <!-- Body -->
+              <path d="M200 50 L230 100 L240 200 L250 300 L245 450 L230 530 L200 560 L170 530 L155 450 L150 300 L160 200 L170 100 Z" fill="#1A1A1A" stroke="#3D3D3D" stroke-width="1"/>
+              <!-- Front wing -->
+              <rect x="120" y="60" width="160" height="12" rx="2" fill="#3D3D3D"/>
+              <!-- Rear wing -->
+              <rect x="140" y="540" width="120" height="14" rx="2" fill="#3D3D3D"/>
+              <!-- Sidepods -->
+              <path d="M160 200 L140 220 L135 350 L155 400 L160 400 Z" fill="#2A2A2A"/>
+              <path d="M240 200 L260 220 L265 350 L245 400 L240 400 Z" fill="#2A2A2A"/>
+              <!-- Cockpit -->
+              <ellipse cx="200" cy="250" rx="20" ry="35" fill="#060606" stroke="#E8002D" stroke-width="1"/>
+              <!-- Halo -->
+              <path d="M185 230 Q200 200 215 230" fill="none" stroke="#9A9A9A" stroke-width="3"/>
+            </g>
+            <!-- Tyre positions (clickable) -->
+            <g id="tyre-FL" class="tyre-zone" data-position="FL">
+              <rect x="110" y="95" width="40" height="65" rx="8" fill="#3D3D3D" stroke="#555" stroke-width="2"/>
+              <text x="130" y="133" fill="#9A9A9A" font-family="'DM Mono', monospace" font-size="14" text-anchor="middle">FL</text>
+            </g>
+            <g id="tyre-FR" class="tyre-zone" data-position="FR">
+              <rect x="250" y="95" width="40" height="65" rx="8" fill="#3D3D3D" stroke="#555" stroke-width="2"/>
+              <text x="270" y="133" fill="#9A9A9A" font-family="'DM Mono', monospace" font-size="14" text-anchor="middle">FR</text>
+            </g>
+            <g id="tyre-RL" class="tyre-zone" data-position="RL">
+              <rect x="105" y="440" width="45" height="75" rx="10" fill="#3D3D3D" stroke="#555" stroke-width="2"/>
+              <text x="128" y="483" fill="#9A9A9A" font-family="'DM Mono', monospace" font-size="14" text-anchor="middle">RL</text>
+            </g>
+            <g id="tyre-RR" class="tyre-zone" data-position="RR">
+              <rect x="250" y="440" width="45" height="75" rx="10" fill="#3D3D3D" stroke="#555" stroke-width="2"/>
+              <text x="273" y="483" fill="#9A9A9A" font-family="'DM Mono', monospace" font-size="14" text-anchor="middle">RR</text>
+            </g>
+          </svg>
+          <div class="pitstop-instructions" id="pitstop-instructions">
+            <p>CLICK EACH TYRE IN ORDER: FL → FR → RL → RR</p>
+          </div>
+        </div>
+        <button class="pitstop-start-btn" id="pitstop-start">START PIT STOP</button>
+        <div class="pitstop-result" id="pitstop-result" style="display:none">
+          <p class="result-time" id="result-time"></p>
+          <p class="result-message" id="result-message"></p>
+          <button class="pitstop-retry-btn" id="pitstop-retry">RETRY</button>
+        </div>
+        <div class="pitstop-leaderboard" id="pitstop-leaderboard">
+          <h3>YOUR BEST TIMES</h3>
+          <ol id="leaderboard-list"></ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 9: OUTRO -->
+    <section id="outro" class="section" aria-label="Outro">
+      <div class="outro-content">
+        <div class="outro-text" id="outro-text">
+          <span class="outro-line">THE 2025 SEASON.</span>
+          <span class="outro-line">24 RACES.</span>
+          <span class="outro-line">20 DRIVERS.</span>
+          <span class="outro-line">ONE CHAMPIONSHIP.</span>
+        </div>
+        <div class="outro-logo" id="outro-logo">
+          <span class="f1-logo">F1</span>
+          <span class="f1-universe">UNIVERSE</span>
+        </div>
+        <a href="#hero" class="outro-cta" id="outro-cta">EXPLORE THE SEASON →</a>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================================ -->
+  <!-- CONFETTI CANVAS (for pit stop)                -->
+  <!-- ============================================ -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- Main Application Script -->
+  <script type="module" src="js/app.js"></script>
+
+</body>
+</html>
