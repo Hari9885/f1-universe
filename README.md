@@ -28,3 +28,5 @@ python3 -m http.server 8000
 ## License
 
 MIT — see [LICENSE](LICENSE). Not affiliated with Formula 1; team and driver names are used as fan-made illustrative content.
+
+Built with help of Claude.
